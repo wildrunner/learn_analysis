@@ -23,6 +23,6 @@ save(list='twitCred',file="twitteR_credentials")
 registerTwitterOAuth(twitCred)
 
 # search twitter
-tweets <- searchTwitter('samsung AND galaxy5',n=28,cainfo='cacert.pem')
-head(tweets)
+tweets <- searchTwitter('interior', lang="ko", n=100, cainfo='cacert.pem')
+tweets
 

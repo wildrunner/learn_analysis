@@ -13,3 +13,16 @@ model <- rpart(Good.Loan ~
                  method="class")
 model.party <- as.party(model)
 plot(model.party)
+
+resultframe <- data.frame(Good.Loan=creditdata$Good.Loan, pred=predict(model, type="class"))
+rtab <- table(resultframe)
+rtab
+
+# accurary
+sum(diag(rtab))/sum(rtab)
+
+# precision
+sum(rtab[1,1])/sum(rtab[,1])
+
+# detection (recall)
+sum(rtab[1,1])/sum(rtab[1,])

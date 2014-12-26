@@ -26,3 +26,5 @@ sum(rtab[1,1])/sum(rtab[,1])
 
 # detection (recall)
 sum(rtab[1,1])/sum(rtab[1,])
+
+

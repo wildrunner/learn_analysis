@@ -27,3 +27,43 @@ Income.fix <- ifelse(is.na(custdata$income), 0, custdata$income)
 brks <- c(0, 25, 65, Inf)
 custdata$age.range <- cut(custdata$age, breaks=brks, include.lowest=T)
 summary(custdata$age.range)
+
+# centering on mean age
+summary(custdata$age)
+meanage <- mean(custdata$age)
+custdata$age.normalized <- custdata$age/meanage
+summary(custdata$age.normalized)
+ggplot(custdata) + geom_density(aes(x=custdata$age.n))
+
+# summarizing age
+stdage <- sd(custdata$age)
+custdata$age.normalized <- (custdata$age - meanage)/stdage
+summary(custdata$age.normalized)
+
+# splitting into test and training using a random group mark
+custdata$gp <- runif(dim(custdata)[1])
+testSet <- subset(custdata, custdata$gp <= 0.1)
+trainingSet <- subset(custdata, custdata$gp > 0.1)
+
+# ensuring test/train split doesn't split inside a household
+hh <- unique(hhdata$household_id)
+households <- data.frame(household_id=hh, gp=runif(length(hh)))
+hhdata <- merge(hhdata, households, by="household_id")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

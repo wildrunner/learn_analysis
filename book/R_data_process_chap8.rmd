@@ -30,6 +30,73 @@ $$
 
 ## 2. 단순 선형 회귀
 ***
+단순 선형 회귀는 종속 변수를 하나의 독립 변수로 설명한다. 두 개 이상의 독립 변수로 설명하는 경우는 중선형 회귀라 한다. 단순 선형 회귀 모델은 다음과 같이 표현된다. 
+$$
+{Y}_{i}={ \beta  }_{ 0 } + { \beta  }_{ 1 }{ X }_{ i } + { \varepsilon  }_{ i }
+$$ 
+
+```{r}
+(m <- lm(dist ~ speed, cars))
+```
+
+$$
+dist = -17.759 + 3.932 x speed + {\varepsilon}
+$$
+
+### 선형 회귀 결과 추출
+#### 회귀 계수: coef(model)
+```{r}
+coef(m)
+```
+
+#### 적합된 값: fitted(model)
+모델에 의해 예측된 종속변수의 값을 보여주며, 모델이 데이터에 적합된 결과이므로 적합된 값이라고 부른다.
+```{r}
+fitted(m)[1:4]
+```
+
+
+#### 잔차: residuals(model)
+식8-1에서 오차는 이론적인 값을 부르는 명칭, 모델로부터 구한 예측값과 살제 값 사이의 차이는 잔차라고 부른다.
+```{r}
+residuals(m)[1:4]
+```
+
+```{r}
+fitted(m)[1:4] + residuals(m)[1:4]
+cars$dist[1:4]
+```
+
+#### 회귀 계수의 신뢰 구간: confint(model)
+단순 선형 회귀에서 절편과 speed의 기울기는 정규 분포를 따른다. 따라서 t 분포를 사용한 신뢰구간을 confint(model)을 사용해 구할 수 있다.
+```{r}
+confint(m)
+```
+
+#### 잔차 제곱 합
+잔차 제곱 합 $\sum { { \varepsilon  }_{ i }^{ 2 } }$은 다음과 같이 구한다.
+```{r}
+deviance(m)
+```
+선형 회귀의 회귀 계수는 최소 제곱법으로 추정하며, 이 경우 오차의 제곱합이 최소가 되도록 회귀 계수를 정한다. 이 때문에 잔체 제곱 합은 데이터와 추정된 모델간의 불일치 정도를 표현하는 것으로 볼 수 있다.
+
+#### 예측과 신뢰 구간
+lm()을 통해 모델을 만들고, predict()로 새로운 데이터에 대한 예측을 한다. 내부적으로는 predict.lm()이 호출된다.
+```{r}
+(m <- lm(dist ~ speed, data=cars))
+predict(m, newdata=data.frame(speed=3))
+```
+
+회귀 계수의 신뢰구간을 고려하기 위해 type="confidence"를 지정하면 제동 거리의 평균 신뢰 구간을 구할 수 있다. 이 경우 오차의 평균은 0으로 가정한다. 
+```{r}
+predict(m, newdata=data.frame(speed=c(3)), interval="confidence")
+```
+특정 속도를 가진 차량 한 대가 주어졌을때 해당 차량에 대해 제동거리를 생각한다면 오차를 무시할 수 없다. 이 경우 type="prediction"을 사용해 예측 구간을 구한다.
+```{r}
+predict(m, newdata=data.frame(speed=c(3)), interval="prediction")
+```
+
+
 
 ## 3. 중선형 회귀
 ***

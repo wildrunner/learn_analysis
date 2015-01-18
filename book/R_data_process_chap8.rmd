@@ -96,6 +96,7 @@ predict(m, newdata=data.frame(speed=c(3)), interval="confidence")
 predict(m, newdata=data.frame(speed=c(3)), interval="prediction")
 ```
 
+#### 모델 평가 
 
 
 ## 3. 중선형 회귀

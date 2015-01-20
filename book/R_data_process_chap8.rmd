@@ -235,17 +235,82 @@ lm(log(y) ~ x)
 
 ***
 #### 상호작용
-
-
-
-
-
-
-
-
+상호 작용은 독립 변수 간의 상호 작용이 종속 변수에 영향을 주는 경우를 말한다. 이 영향을 주는 방법은 합이 아니라 곱의 형태일때를 말한다.
+```{r}
+data(Orange)
+Orange
+with(Orange, plot(Tree, circumference, xlab="tree", ylab="circumference"))
+# 상호 작용 그래프
+with(Orange, interaction.plot(age, Tree, circumference))
+# Tree 열의 데이터를 순서 없는 명목형 변수로 변환
+Orange[,"fTree"] <- factor(Orange[, "Tree"], ordered=FALSE)
+# fTree, age, fTree:age를 설명 변수로 선형 회귀를 수행
+m <- lm(circumference ~ fTree * age, data=Orange)
+anova(m)
+head(model.matrix(m))
+mm <- model.matrix(m)
+# age가 포함된 열만 추출
+mm[, grep("age", colnames(mm))]
+```
 
 ## 4. 이상치
 ***
+이상치는 주어진 회귀 모델에 대해 의해 잘 설명되지 않는 데이터 점들을 뜻한다. 이상치 검출에는 잔차, 특히 외면 스튜던트화 잔차(잔차를 잔차의 표준 편차로 나눈 값)를 사용한다. 이 잔차는 i번째 데이터는 제외하고 표준편차를 구한다.
+```{r}
+data(Orange)
+m <- lm(circumference ~ age + I(age^2), data=Orange)
+rstudent(m)
+```
+
+Orange에 이상치를 추가하고 앞선 포뮬러로 선형 회귀를 수행한 다음 outlierTest(본페로니 이상값 검정)를 호출해 이상치를 찾아보자.
+```{r}
+data(Orange)
+Orange <- rbind(Orange, data.frame(Tree=as.factor(c(6,6,6)),
+                                   age=c(118, 484, 664),
+                                   circumference=c(177, 50, 30)))
+tail(Orange)
+m <- lm(circumference ~ age + I(age^2), data=Orange)
+library(car)
+outlierTest(m)
+```
 
 ## 5. 변수 선택
 ***
+변수의 통계적 특성을 고려해 기계적으로 설명 변수를 채택하는 방법이 있다.
+
+***
+### 변수 선택 방법
+특정 기준(F통계량 이나 AIC:모델의 상대적 품질을 평가하는 척도, 값이 낮을수록 좋음)를 사용해 변수를 하나씩 택하거나 제거한다.
+* 전진 선택법: 절편만 있는 모델에서 기준 통계치를 가장 많이 개선시키는 변수를 차례로 추가
+* 변수 소거법: 모든 변수가 포함된 모델에서 기준 통계치에 가장 도움이 되지 않는 변수를 하나씩 제거하는 방법.
+* 단계적 방법: 기준 통계치에 도움이 되지 않는 변수를 삭제하거나, 도움이 되는 변수를 추가한다.
+
+```{r}
+library(mlbench)
+data(BostonHousing)
+m <- lm(medv ~ ., data=BostonHousing)
+m2 <- step(m, direction="both")
+formula(m2)
+```
+
+***
+### 모든 경우에 대한 비교
+N개의 설명 변수가 있을 때 각 변수를 추가하거나 뺀 총 2N개의 회귀 모델을 만들고 이들 모두를 비교하는 방법이 있다.
+```{r}
+library(leaps)
+library(mlbench)
+data(BostonHousing)
+m <- regsubsets(medv ~ ., data=BostonHousing)
+summary(m)
+# BIC (작을수록 좋음)
+summary(m)$bic
+# 수정 결정 계수 (높을수록 좋음)
+summary(m)$adjr2
+plot(m, scale="adjr2")
+```
+
+
+
+
+
+

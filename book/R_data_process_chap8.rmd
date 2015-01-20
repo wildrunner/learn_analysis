@@ -171,6 +171,78 @@ matlines(speed, ys, lty=c(1, 2, 2), col=1)
 
 ## 3. 중선형 회귀
 ***
+하나 이상의 독립 변수가 사용된 선형 회귀. 
+
+***
+#### 모델 생성 및 평가
+```{r}
+(m <- lm(Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width, data=iris))
+summary(m)
+
+```
+위의 결과에서 독립변수의 p값이 모두 0.05보다 작아 모두 중요한 변수이다. 중선형 회귀에서 귀무가설은 '모든 계수가 0이다'이다. 따라서 F 통계량에서 p-value < 0.05이기 때문에 하나 이상의 독립 변수의 계수가 0이 아니다.
+
+***
+#### 범주형 변수
+다음은 범주형 변수인 Species를 포함한 중선형 회귀다.
+```{r}
+(m <- lm(Sepal.Length ~ ., data=iris))
+summary(m)
+```
+위의 결과에서 setosa가 없는 이유는 범주형 변수를 가변수를 사용해 표현했기 때문이다.
+
+
+표현하고자 하는 Species  | Speciesversicolor  | Speciesvirginica 
+--- | --- | --- |
+setosa  | 0  |  0 |
+versicolor | 1  |  0 |
+virginica  | 0 |  1 |
+
+```{r}
+model.matrix(m)[c(1,51,101),]
+
+```
+
+***
+#### 중선형 회귀 모델의 시각화
+
+```{r}
+with(iris, plot(Sepal.Width, Sepal.Length, cex=.7, pch=as.numeric(Species)))
+m <- lm(Sepal.Length ~ Sepal.Width + Species, data=iris)
+coef(m)
+abline(2.25, 0.80, lty=1)
+abline(2.25 + 1.45, 0.80, lty=2)
+abline(2.25 + 1.94, 0.80, lty=3)
+legend("topright", levels(iris$Species), pch=1:3, bg="white")
+```
+
+***
+#### 표현식을 위한 l()의 사용
+2차 이상이나 두 변수의 합을 하나의 변수로 보고 회귀 분석할때 I()안에 원하는 수식을 표현한다. I()는 객체의 해석과 변환을 방지한다.
+```{r}
+x <- 1:1000
+y <- x^2 + 3*x + 5 + rnorm(1000)
+lm(y ~ I(x^2) + x)
+```
+
+***
+#### 변수의 변환
+```{r}
+x <- 101:200
+y <- exp(3 * x + rnorm(100))
+lm(log(y) ~ x)
+```
+
+***
+#### 상호작용
+
+
+
+
+
+
+
+
 
 ## 4. 이상치
 ***

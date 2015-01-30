@@ -168,6 +168,14 @@ m <- rpart(Class ~. , data=BreastCancer)
 varImp(m)
 ```
 
+### 모델 평가 방법
+#### 평가 메트릭
+분류 모델에서 모델 평가 메트릭은 모델에서 구한 예측값과 실제 값의 발생 빈도를 나열한 confusion matrix로부터 계산하다. True/False는 예측결과, Positive/Negative는 예측값
+
+--- | Y  | N |
+--- | --- | --- |
+Y  | True Positive(TP)  |  False Positive(FP) |
+N | False Negative(FN)  |  True Negative(TN) |
 
 
 

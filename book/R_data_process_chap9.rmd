@@ -1,0 +1,185 @@
+---
+title: "9장. 분류 알고리즘: 데이터 탐색, 전처리, 모델 평가 방법 설정"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    theme: united
+    highlight: tango  
+    mathjax: "http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+---
+
+## 1. 데이터 탐색
+***
+### 기술 통계
+describe()는 summary()와 유사하지만 결측치의 수, 서로 다른 값의 수, 데이터의 분포, 합, 평균 등 좀 더 다양한 요약 정보를 제시한다.
+```{r}
+library(Hmisc)
+str(mtcars)
+describe(mtcars)
+```
+summary.formual()는 포뮬러를 인자로 지정할 수 있으며, 지정한 포뮬러에 따라 데이터를 분할하여 분석할 수 있다. method가 'response'이면 ~ 우측에 나열한 변수 각각이 ~ 좌측의 나열한 변수를 요약한다. 
+```{r}
+summary(mpg ~ cyl + hp, data=mtcars)
+```
+기본 요약 함수는 mean이며 fun에 함수를 지정할 수 있다.
+```{r}
+summary(mpg ~ cyl + hp, data=mtcars, fun=var)
+```
+method가 'reverse'인 경우 lhs에는 범주형 변수를 적고, rhs에 변수들을 적으면 lhs의 분류에 따라 rhs가 요약된다.
+```{r}
+summary(cyl ~ mpg + hp, data=mtcars, method="reverse")
+```
+method가 'cross'인 경우는 rhs에 나열한 변수의 조합으로 lhs를 요약할 때 사용한다.
+```{r}
+summary(mpg ~ cyl + hp, data=mtcars, method="cross")
+```
+
+### 데이터 시각화
+***
+```{r}
+plot(iris)
+plot(iris$Sepal.Length)
+plot(iris$Species)
+```
+plot()에서 포뮬러를 사용해 데이터를 그릴 수도 있다.
+```{r}
+plot(Species ~ Sepal.Length, data=iris)
+```
+다음 코드에서는 팩터 타입의 Species를 숫자로 변환해 점의 모양(pch)에 지정했다.
+```{r}
+with(iris, {
+  plot(Sepal.Length, Sepal.Width, pch=as.numeric(Species))
+  legend("topright", legend=levels(iris$Species), pch=1:3)
+})
+```
+caret 패키지에는 피처와 분류 간의 관련성을 쉽게 시각해해주는 featurePlot() 함수가 있다. 다음은 아이리스의 모든 변수를 iris$Species에 따라 그리되, Species 별 구분을 타원으로 표시한 예다.
+```{r}
+library(caret)
+#에러 발생
+#featurePlot(iris[, 1:4], iris$Species, "ellipse")
+```
+
+## 전처리
+***
+분류 알고리즘을 적용하기에 앞서 모델링에 알맞은 형태로 데이터를 처리해주어야 한다.
+### 데이터 변환
+***
+#### 데이터 정규화(Feature Scaling)
+데이터 정규화는 변수값의 분포를 표준화하는 것을 의미한다. 표준화는 변수에서 데이터의 평균을 빼거나 변수를 전체 데이터의 표준 편차로 나누는 작업을 포함한다. 이렇게 하면 변수값의 평균이 0이 되고 분포 또한 일정해진다.
+다음은 아이리스 데이터 값을 정규화한 예다. 
+```{r}
+# scale()은 행렬을 반환하므로 데이터 프레임으로 변환하고 cbind()로 Species를 합침
+cbind(as.data.frame(scale(iris[1:4])), iris$Species)
+```
+#### 주성분 분석(PCA, Principal Component Analysis)
+주성분 분석은 데이터에 많은 변수가 있을 때 변수의 수를 줄이는 차원 감소 기법 중 하나다. PCA는 변수들을 주성분이라 부르는 선형적인 상관관계가 없는 다른 변수들로 재표현한다.
+1:10을 저장한 x, 여기에 약간의 노이즈를 추가한 y, x + y에 약간의 노이즈를 추가한 z가 있을 때 이 데이터에 주성분 분석을 수행해보자.
+```{r}
+x <- 1:10
+y <- x + runif(10, min=-.5, max=.5)
+z <- x + y + runif(10, min=-10, max=.10)
+(data <- data.frame(x, y, z))
+# PCA 수행
+pr <- princomp(data)
+# 첫 번째와 두 번째 주성분에 의해 99.97%가 표현된다.
+summary(pr)
+# Comp.1, Comp.2 두 컬럼은 x, y, z를 2개 차원으로 축약한 결과다.
+pr$scores[,1:2]
+```
+#### 원 핫 인코딩
+***
+랜덤 포레스트 알고리즘에서는 범주형 변수의 레벨수를 32개로 제한하고 있다. 이때 여러 개의 가변수를 사용해 범주형 변수를 재표현할 수 있으며 이를 원 핫 인코딩이라고 부른다.
+```{r}
+(x <- data.frame(lvl=factor(c("A", "B", "A", "A", "C")),
+                 value=c(1,3,2,4,5)))
+# A는 (0,0), B는 (1,0), C는 (0,1)로 변환
+model.matrix(~ lvl, data=x)[,-1]
+```
+
+### 결측치의 처리
+***
+```{r}
+iris_na <- iris
+iris_na[c(10, 20, 25, 40, 32), 3] <- NA
+iris_na[c(33, 100, 123), 1] <- NA
+# 결측치 존재 확인, 한 컬럼에 대해서만 조사할?때는 is.na() 사용
+iris_na[!complete.cases(iris_na),]
+```
+
+```{r}
+# NA에 넣을 값 생성
+mapply(median, iris_na[1:4], na.rm=TRUE)
+library(DMwR)
+iris_na[!complete.cases(iris_na),]
+# 중앙값으로 NA를 대치. knn값으로 NA를 대치하려면 knnImputation() 사용
+centralImputation(iris_na[1:4])[c(10,20,25,32,33,40,100,123),]
+```
+
+### 변수 선택
+***
+데이터의 변수 중 모델링에 가장 적합한 변수만 택하는 과정을 변수 선택 또는 피처 선택이라 한다.
+
+#### 0에 가까운 분산(Near Zero Variance)
+***
+```{r}
+library(caret)
+library(mlbench)
+data(Soybean)
+# 데이터에서 분산이 0에 가까운 변수를 찾는다. (nzv가 TRUE)
+nearZeroVar(Soybean, saveMetrics=TRUE)
+nearZeroVar(Soybean)
+mySoybean <- Soybean[,-nearZeroVar(Soybean)]
+```
+
+#### 상관 계수(Correlation)
+상관 계수가 큰 예측 변수들이 있을 경우 모델의 성능이 떨어지거나 불안정해진다. 그래서 상관관계가 높은 변수들이 있으면 이들을 주성분 분석과 같은 방법을 사용해 서로 독립된 차원으로 변환하거나, 상관 계수가 큰 변수들을 제거해버린다.
+```{r}
+library(mlbench)
+library(caret)
+data(Vehicle)
+# 3, 8, 11, 7, 9, 2번째 컬럼의 상관 계수가 높다.
+findCorrelation(cor(subset(Vehicle, select=-c(Class))))
+
+library(FSelector)
+data(Ozone)
+# V8, V12, V9 등이 V4와 상관 계수가 높다. 상관 계수로부터 변수의 중요도를 구한다.
+(v <- linear.correlation(V4 ~., data=subset(Ozone, select=-c(V1, V2, V3))))
+# V4와 상관 계수값 이 큰 변수들을 찾는다.
+cutoff.k(v, 3)
+
+```
+
+#### 카이 제곱 검정
+***
+```{r}
+# 변수들의 중요도를 평가하고 그 중 세개의 변수를 선택한다.
+(cs <- chi.squared(Class ~. , data=Vehicle))
+cutoff.k(cs, 3)
+```
+
+#### 모델을 사용한 변수 중요도 평가
+***
+```{r}
+library(rpart)
+data(BreastCancer)
+m <- rpart(Class ~. , data=BreastCancer)
+# 모델로부터 변수 중요도를 계산한다.
+varImp(m)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

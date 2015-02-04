@@ -1,0 +1,101 @@
+---
+title: "10장. 분류 알고리즘2: 기계 학습 알고리즘"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    theme: united
+    highlight: tango  
+    mathjax: "http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+---
+
+## 1. 로지스틱 회귀 모델
+***
+로지스틱 회귀 모델은 데이터 X의 분류가 Y일 확률은 p, N일 확률은 1-p라 할때 다음과 같은 선형 모델을 가정한다.
+
+$$
+\log { (p/(1-p))\quad =\quad { \beta  }_{ 0 } } +\quad { \beta  }_{ 1 }X
+$$
+
+```{r}
+d <- subset(iris, Species == "virginica" | Species == "versicolor")
+str(d)
+d$Species <- factor(d$Species)
+str(d)
+# 로지스틱 회귀 모델 작성
+(m <- glm(Species ~ ., data=d, family="binomial"))
+# 모델 적합된 값
+fitted(m)[c(1:5, 51:55)]
+
+f <- fitted(m)
+as.numeric(d$Species)
+# 예측값이 0.5 이하인 경우 virginica, 크면 versicolor라 하자.
+# 로지스틱 회귀 결과는 0또는 1이므로 -1를 해준다.
+# 예측된 분류와 실제 분류가 일치한 경우 TRUE, 일치하지 않으면 FALSE로 표시
+is_correct <- ifelse(f > .5, 1, 0) == as.numeric(d$Species) - 1
+sum(is_correct)
+sum(is_correct) / NROW(is_correct)
+# 새로운 데이터에 대한 예측 (내부적으로 predict.glm() 호출)
+predict(m, newdata=d[c(1,10,55),], type="response")
+
+```
+
+## 2. 다항 로지스틱 회귀 분석
+예측하고자 하는 분류가 두 개가 아니라 여러 개가 될 수 있는 경우 다항 로지스틱 회귀 분석을 사용한다.
+```{r}
+library(nnet)
+(m <- multinom(Species ~., data=iris))
+# 각 행의 데이터가 각 분류에 속할 확률
+head(fitted(m))
+predict(m, newdata=iris, type="probs")
+predicted <- predict(m, newdata=iris)
+sum(predicted == iris$Species) / NROW(predicted)
+xtabs(~ predicted + iris$Species)
+```
+
+## 3. 의사 결정 나무
+의사 결정 나무는 지니 불순도 또는 정보 이득 등의 기준을 사용하여 노드를 재귀적으로 분할하면서 나무 모델을 만드는 방법이다. 
+
+### 의사 결정 나무 모델
+데이터의 특징에 대한 질문을 하면서 응답에 따라 데이터를 분류해가는 알고리즘. 데이터가 얼마나 잘 분리되었는지는 불순도(impurity)라는 기준으로 평가하며, 가장 좋은 질문은 한 노드의 데이터를 두 개의 자식 노드로 분리했을 때 자식 노드들의 불순도가 가장 낮아지는 질문이다.
+가장 흔히 사용하는 불순도 함수는 지니 불순도이며 p(1-p)로 표시되며 p가 1/2일때 가장 큰 값을 가지는 포물선이다.
+
+### 분류와 회귀 나무
+```{r}
+library(rpart)
+(m <- rpart(Species ~., data=iris))
+plot(m, compress=TRUE, margin=.2)
+text(m, cex=1.5)
+library(rpart.plot)
+prp(m, type=4, extra=2, digits=3)
+```
+
+### 조건부 추론 나무
+조건부 추론 나무는 CART(rpart가 구현한 알고리즘) 같은 의사 결정 나무의 두 가지 문제를 해결한다. 과적합 문제와 다양한 값으로 분할 가능한 변수가 다른 변수에 비해 선호되는 문제다. 조건부 추론 나무는 조건부 분포에 따라 변수와 반응값(분류) 사이의 연관 관계를 측정하여 노드 분할에 사용할 변수를 선택한다. 또한 다중 가설 검정을 고려한 절차를 적용하여 적절한 시점에 노드의 분할을 중단한다.
+
+```{r}
+library(party)
+(m <- ctree(Species ~., data=iris))
+plot(m)
+```
+
+### 랜덤 포레스트
+앙상블 학습 기법을 사용한 모델. 앙상블 학습은 주어진 데이터로부터 여러 개의 모델을 학습한 다음, 예측시 여러 모델의 예측 결과들을 종합해 사용하여 정확도를 높이는 기법을 말한다.
+랜덤 포레스트의 각 의사 결정 나무를 데이터의 일부만을 사용해 만들며, 노드내 데이터를 자식 노드로 나누는 기준을 정할 때 전체 변수가 아니라 일부 변수만 대상으로 하여 가지를 나눌 기준을 찾는다. 최종적으로는 여러 개의 의사 결정 나무가 내놓은 예측 결과를 투표 방식으로 선택한다.
+
+```{r}
+library(randomForest)
+m <- randomForest(Species ~., data=iris)
+# 변수 중요도 평가
+m <- randomForest(Species ~., data=iris, importance=TRUE)
+importance(m)
+varImpPlot(m, main="varImpPlot of iris")
+```
+
+
+
+
+
+
+
+
